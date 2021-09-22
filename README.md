@@ -25,7 +25,7 @@ Flix is an app that allows users to browse movies from the [The Movie Database A
 
 ### Notes
 - Viewing the placeholder image
-- Implementing heterogenous recycler views
+- Implementing heterogenous recycler views (movies with an average rating of 8 or higher were considered "popular")
 
 ### Open-source libraries used
 
