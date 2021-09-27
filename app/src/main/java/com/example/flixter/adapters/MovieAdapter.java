@@ -1,6 +1,8 @@
 package com.example.flixter.adapters;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -10,20 +12,32 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.app.ActivityOptionsCompat;
+import androidx.core.util.Pair;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.flixter.DetailActivity;
 import com.example.flixter.R;
+import com.example.flixter.databinding.ItemBackdropLayoutBinding;
+import com.example.flixter.databinding.ItemLayoutBinding;
 import com.example.flixter.models.Movie;
 
 import org.jetbrains.annotations.NotNull;
+import org.parceler.Parcels;
 
 import java.util.List;
+
+import jp.wasabeef.glide.transformations.RoundedCornersTransformation;
 
 public class MovieAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final String TAG = "MovieAdapter";
 
     public static final int POPULAR = 1, NOT_POPULAR = 0;
+
+    private final int radius = 24;
+    private final int margin = 0;
 
 
     Context context;
@@ -52,21 +66,18 @@ public class MovieAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull @NotNull ViewGroup parent, int viewType) {
         RecyclerView.ViewHolder viewHolder;
-        LayoutInflater inflater = LayoutInflater.from(context);
+        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
 
         switch (viewType) {
             case POPULAR:
-                View v2 = inflater.inflate(R.layout.item_backdrop_layout, parent, false);
-                viewHolder = new ViewHolder2(v2);
-                break;
-            case NOT_POPULAR:
-                View v1 = inflater.inflate(R.layout.item_layout, parent, false);
-                viewHolder = new ViewHolder1(v1);
+                ItemBackdropLayoutBinding itemBackdropLayoutBinding = ItemBackdropLayoutBinding.inflate(inflater, parent, false);
+                viewHolder =  new ViewHolder2(itemBackdropLayoutBinding);
                 break;
             default:
-                View v = inflater.inflate(R.layout.item_backdrop_layout, parent, false);
-                viewHolder = new ViewHolder1(v);
+                ItemLayoutBinding defaultBinding = ItemLayoutBinding.inflate(inflater, parent, false);
+                viewHolder =  new ViewHolder1(defaultBinding);
                 break;
+
         }
 
         return viewHolder;
@@ -95,21 +106,28 @@ public class MovieAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
     // not popular
     public class ViewHolder1 extends RecyclerView.ViewHolder {
-        TextView textTitle;
-        TextView textDesc;
+        private ItemLayoutBinding binding;
+
+        TextView title;
+        TextView overview;
         ImageView imageView;
+        ConstraintLayout container;
 
 
-        public ViewHolder1(@NonNull @NotNull View itemView) {
-            super(itemView);
-            textTitle = itemView.findViewById(R.id.textTitle);
-            textDesc = itemView.findViewById(R.id.textDesc);
-            imageView = itemView.findViewById(R.id.imageView);
+        public ViewHolder1(ItemLayoutBinding binding) {
+            super(binding.getRoot());
+            this.binding = binding;
+
+//            binding = ItemLayoutBinding.bind(itemView);
+//            title = itemView.findViewById(R.id.title);
+//            overview = itemView.findViewById(R.id.overview);
+//            imageView = itemView.findViewById(R.id.imageView);
+//            container = itemView.findViewById(R.id.container);
         }
 
         public void bind(@NotNull Movie movie) {
-            textTitle.setText(movie.getTitle());
-            textDesc.setText(movie.getOverview());
+            binding.title.setText(movie.getTitle());
+            binding.overview.setText(movie.getOverview());
             String imageUrl;
 
             if (context.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
@@ -118,22 +136,55 @@ public class MovieAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
                 imageUrl = movie.getPosterPath();
             }
 
-            Glide.with(context).load(imageUrl).placeholder(R.drawable.placeholder_cat).into(imageView);
+            Glide.with(context)
+                    .load(imageUrl)
+                    .fitCenter()
+                    .transform(new RoundedCornersTransformation(radius, margin))
+                    .placeholder(R.drawable.placeholder_cat)
+                    .into(binding.imageView);
+
+            binding.container.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent intent = new Intent(context, DetailActivity.class);
+                    intent.putExtra("movie", Parcels.wrap(movie));
+
+//                    intent.putExtra(DetailActivity.EXTRA_CONTACT, contact);
+                    Pair<View, String> p1 = Pair.create((View)binding.title, "title");
+                    Pair<View, String> p2 = Pair.create((View)binding.overview, "overview");
+                    ActivityOptionsCompat options = ActivityOptionsCompat.
+                            makeSceneTransitionAnimation((Activity) context, p1, p2);
+                    context.startActivity(intent, options.toBundle());
+                }
+            });
         }
     }
 
     // popular
     public class ViewHolder2 extends RecyclerView.ViewHolder {
-        ImageView imageView;
+        private ItemBackdropLayoutBinding binding;
 
-
-        public ViewHolder2(@NonNull @NotNull View itemView) {
-            super(itemView);
-            imageView = itemView.findViewById(R.id.imageView);
+        public ViewHolder2(ItemBackdropLayoutBinding binding) {
+            super(binding.getRoot());
+            this.binding = binding;
         }
 
         public void bind(Movie movie) {
-            Glide.with(context).load(movie.getBackdropPath()).into(imageView);
+
+            Glide.with(context)
+                    .load(movie.getBackdropPath())
+                    .fitCenter()
+                    .transform(new RoundedCornersTransformation(radius, margin))
+                    .into(binding.imageView);
+
+            binding.container.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Intent i = new Intent(context, DetailActivity.class);
+                    i.putExtra("movie", Parcels.wrap(movie));
+                    context.startActivity(i);
+                }
+            });
         }
     }
 }
